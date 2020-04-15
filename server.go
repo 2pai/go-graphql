@@ -3,9 +3,11 @@ package main
 import (
 	"github.com/2pai/go-graphql/graph"
 	"github.com/2pai/go-graphql/graph/generated"
+	"github.com/2pai/go-graphql/internal/auth"
 	"github.com/2pai/go-graphql/internal/pkg/db/mysql"
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
+	"github.com/go-chi/chi"
 	"github.com/joho/godotenv"
 	"log"
 	"net/http"
@@ -25,6 +27,10 @@ func main() {
 		port = defaultPort
 	}
 
+	router := chi.NewRouter()
+
+	router.Use(auth.Middleware())
+
 	database.InitDB()
 	database.Migrate()
 
@@ -34,5 +40,6 @@ func main() {
 	http.Handle("/query", srv)
 
 	log.Printf("connect to http://localhost:%s/ for GraphQL playground", port)
+	log.Println("OK")
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }

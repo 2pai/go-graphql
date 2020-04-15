@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -13,7 +14,7 @@ type contextKey struct {
 	name string
 }
 
-var userCtxKey = &contextKey{"User"}
+var userCtxKey = &contextKey{"user"}
 
 func Middleware() func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
@@ -26,6 +27,7 @@ func Middleware() func(http.Handler) http.Handler {
 			}
 
 			tokenStr := c.Value
+			log.Println(tokenStr)
 			username, err := jwt.ParseToken(tokenStr)
 
 			if err != nil {
@@ -36,15 +38,15 @@ func Middleware() func(http.Handler) http.Handler {
 			user := users.User{Username: username}
 			id, err := users.GetUserIdByUsername(username)
 
-			user.ID = strconv.Itoa(id)
 			if err != nil {
 				next.ServeHTTP(w, r)
 				return
 			}
+			user.ID = strconv.Itoa(id)
 
 			ctx := context.WithValue(r.Context(), userCtxKey, user)
-			r = r.WithContext(ctx)
 
+			r = r.WithContext(ctx)
 			next.ServeHTTP(w, r)
 		})
 	}
