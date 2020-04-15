@@ -1,6 +1,7 @@
 package users
 
 import (
+	"database/sql"
 	database "github.com/2pai/go-graphql/internal/pkg/db/mysql"
 	"golang.org/x/crypto/bcrypt"
 	"log"
@@ -13,7 +14,7 @@ type User struct {
 }
 
 func (user *User) Create() {
-	statement, err := database.DB.Prepare("INSERT INTO (Username,Password) VALUES(?,?)")
+	statement, err := database.Db.Prepare("INSERT INTO Users(Username,Password) VALUES(?,?)")
 	if err != nil {
 		log.Panic(err)
 	}
@@ -32,4 +33,41 @@ func HashPassword(password string) (string, error) {
 func VerifyPassword(password, hash string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
 	return err == nil
+}
+func GetUserIdByUsername(username string) (int, error) {
+	statement, err := database.Db.Prepare("select ID from Users WHERE Username = ?")
+	if err != nil {
+		log.Fatal(err)
+	}
+	row := statement.QueryRow(username)
+
+	var Id int
+	err = row.Scan(&Id)
+	if err != nil {
+		if err != sql.ErrNoRows {
+			log.Fatal(err)
+		}
+		return 0, err
+	}
+	return Id, nil
+}
+
+func (user *User) Authenticate() bool {
+	statement, err := database.Db.Prepare("SELECT Password from Users WHERE Username = ?")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	row := statement.QueryRow(user.Username)
+
+	var hashedPassword string
+	err = row.Scan(&hashedPassword)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return false
+		} else {
+			log.Fatal(err)
+		}
+	}
+	return VerifyPassword(user.Password, hashedPassword)
 }

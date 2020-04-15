@@ -10,7 +10,7 @@ import (
 	"os"
 )
 
-var DB *sql.DB
+var Db *sql.DB
 
 func InitDB() {
 	MysqlUrl := os.Getenv("MYSQL_URL")
